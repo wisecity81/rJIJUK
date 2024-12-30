@@ -11,3 +11,5 @@ RoxygenNote: 7.3.2
 Depends: 
     aStarter,
     aStarterGIS
+URL: https://github.com/wisecity81/rJIJUK
+BugReports: https://github.com/wisecity81/rJIJUK/issues
