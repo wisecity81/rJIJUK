@@ -20,7 +20,9 @@ DB2folder <- function(db, BJDcol, dbSrc, jpth = "R:/_library/_jijuk/") {
       dir.create(file.path(DBpth, dbSubFolder), recursive = TRUE)
     }
     saveRDS(db[db[[BJDcol]] == bjd_i, ]
-            , file = file.path(DBpth, dbSubFolder, dbSrc, ".rds")
+            , file = paste0(file.path(DBpth, dbSubFolder, dbSrc)
+                            , ".rds"
+                            )
             )
   }
 }
