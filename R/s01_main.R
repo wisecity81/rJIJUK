@@ -14,6 +14,7 @@ DB2folder <- function(db, BJDcol, dbSrc, jpth = "R:/_library/_jijuk/") {
   DBpth = paste0(jpth, "db")
   BJDlst = db[[BJDcol]] %>% unique
   for (bjd_i in BJDlst) {
+    cat(.now(), "Splitting ", bjd_i, "\n")
     bjd_parts = strsplit(bjd_i, " ")[[1]]
     dbSubFolder = paste0(bjd_parts, collapse = "/")
     if (file.exists(file.path(DBpth,dbSubFolder)) == FALSE) {
