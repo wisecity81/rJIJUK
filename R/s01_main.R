@@ -11,34 +11,39 @@ DB2folder <- function(db, BJDcol, dbSrc, jpth = "R:/_library/_jijuk/") {
   # db: data.frame
   # BJDcol: BJD column name
   # jpth: jijuk path
+  # if nrow(db) == 0, return "db is empty"
 
-  library(progress)
+  if (nrow(db) == 0) {
+    return("db is empty")
+  } else {
+    library(progress)
 
-  DBpth = paste0(jpth, "db")
-  BJDlst = db[[BJDcol]] %>% unique
+    DBpth = paste0(jpth, "db")
+    BJDlst = db[[BJDcol]] %>% unique
 
-  # 진행 바 생성
-  pb <- progress_bar$new(
-    format = "  진행중 [:bar] :current/:total (:elapsed)",
-    total = length(BJDlst),    # 총 작업 개수
-    clear = FALSE,  # 완료 후 진행 바 유지
-    width = 60      # 진행 바 너비
-  )
-  cat(.now(), "총 ", length(BJDlst), "개의 BJD 처리\n")
-  for (i in 1:length(BJDlst)) {
-    bjd_i = BJDlst[i]
-    cat(.now(), "Splitting ", bjd_i, "(",i,"/",length(BJDlst), ")\n", file = ".log", append = T)
-    bjd_parts = strsplit(bjd_i, " ")[[1]]
-    dbSubFolder = paste0(bjd_parts, collapse = "/")
-    if (file.exists(file.path(DBpth,dbSubFolder)) == FALSE) {
-      dir.create(file.path(DBpth, dbSubFolder), recursive = TRUE)
+    # 진행 바 생성
+    pb <- progress_bar$new(
+      format = "  진행중 [:bar] :current/:total (:elapsed)",
+      total = length(BJDlst),    # 총 작업 개수
+      clear = FALSE,  # 완료 후 진행 바 유지
+      width = 60      # 진행 바 너비
+    )
+    cat(.now(), "총 ", length(BJDlst), "개의 BJD 처리\n")
+    for (i in 1:length(BJDlst)) {
+      bjd_i = BJDlst[i]
+      cat(.now(), "Splitting ", bjd_i, "(",i,"/",length(BJDlst), ")\n", file = ".log", append = T)
+      bjd_parts = strsplit(bjd_i, " ")[[1]]
+      dbSubFolder = paste0(bjd_parts, collapse = "/")
+      if (file.exists(file.path(DBpth,dbSubFolder)) == FALSE) {
+        dir.create(file.path(DBpth, dbSubFolder), recursive = TRUE)
+      }
+      saveRDS(db[db[[BJDcol]] == bjd_i, ]
+              , file = paste0(file.path(DBpth, dbSubFolder, dbSrc)
+                              , ".rds"
+              )
+      )
+      pb$tick()      # 진행 바 업데이트
     }
-    saveRDS(db[db[[BJDcol]] == bjd_i, ]
-            , file = paste0(file.path(DBpth, dbSubFolder, dbSrc)
-                            , ".rds"
-                            )
-            )
-    pb$tick()      # 진행 바 업데이트
   }
 }
 
