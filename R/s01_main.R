@@ -116,3 +116,47 @@ downloadInfo = function(download = "./_download(zip)") {
 
   return(fLstDF)
 }
+
+#' stnBy2DB
+#'
+#' This function is to list the files in the stand_by folder, and is to split the files into DBs by BJD.
+#' And then splited DBs are saved in the DB folder.
+#' @param stand_by stand_by folder
+#' @return NULL
+stnBy2DB = function(stand_by = "./_stand_by") {
+
+  DBs = list("D157" = "V3") # BJD column name
+  fLst = list.files(stand_by)
+  # Extract db tpye from the file name
+  db_i = fLst %>% .s_xtr("^(AL)_D[0-9]+") %>% .s_rm("^(AL)_")
+
+  # Define sep. character for each DB.
+  sep_i = c("D157" = ",")
+
+  # Create a progress bar
+  pb <- progress_bar$new(
+    format = "  진행중 :current/:total (:elapsed 초 경과)",
+    total = length(fLst),    # 총 작업 개수
+    clear = FALSE,  # 완료 후 진행 바 유지
+    width = 60      # 진행 바 너비
+  )
+
+  # Loop for each file
+  for (i in 1:length(fLst)) {
+    fn = fLst[i]
+    db = db_i[i]
+    bjdcol = DBs[[db]]
+
+    # Read the file
+    cat(.now(), "Split", fn, "\n", file = ".log", append = TRUE)
+    cat(.now(), "Split", fn, "\n")
+    a = .rdSmart_csv(paste0(stand_by, "/", fn), .sep = sep_i[db]) %>% .noMsg()
+
+    # split and save the data by BJD
+    DB2folder(db = a, BJDcol = bjdcol, dbSrc = fn)
+
+    # Update the progress bar
+    pb$tick() # Update the progress bar
+    cat("\n")
+  }
+}
