@@ -165,3 +165,35 @@ stnBy2DB = function(stand_by = "./_stand_by") {
     cat("\n")
   }
 }
+
+#' cleanUpNonBJD
+#'
+#' Find all rds files in ./db and read them into data frame.
+#' source name is that found file name without extension ".rds".
+#' Loop DB2folder function for all rds files.
+#' Rename the rds files to rds.done.
+#' @param bjdFn BJD file name
+#' @return NULL
+#' @export
+cleanUpNonBJD = function(bjdFn = "./_BJD/BJD.txt") {
+  # Find all rds files in ./db and read them into data frame.
+  # source name is that found file name without extension ".rds".
+  # Loop DB2folder function for all rds files,
+  # with option:
+  #  db = data frame
+  #  BJDcol = "V3"
+  #  dbSrc = source name
+  # And then rename extension of the rds file from ".rds"  to ".rds.done".
+  fileLst = list.files("./db", pattern = ".rds", full.names = TRUE)
+  sourceLst = gsub(".rds", "", basename(fileLst))
+  bjd = .rdSmart_csv(fn = bjdFn , .sep = "\t") %>% mutate(code = V1, bjd = V2, exist = V3) %>% select(code, bjd, exist)
+  for (i in 1:length(fileLst)) {
+    cat(fileLst[i], "\n")
+    DB2folder(
+      db = fileLst[i] %>% readRDS() %>% merge(bjd, by.x = "V2", by.y = "code") %>% mutate(V3 = bjd) %>% select(-exist, -bjd),
+      BJDcol = "V3",
+      dbSrc = sourceLst[i]
+    )
+    file.rename(fileLst[i], gsub(".rds", ".rds.done", fileLst[i]))
+  }
+}
