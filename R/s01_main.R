@@ -197,3 +197,43 @@ cleanUpNonBJD = function(bjdFn = "./_BJD/BJD.txt") {
     file.rename(fileLst[i], gsub(".rds", ".rds.done", fileLst[i]))
   }
 }
+
+#' checkCurrent
+#'
+#' list up all rds files in "./db" folder recursively, and check the last update date.
+#' @param dtCols date columns for each DB
+#' @return data.frame
+#' @export
+checkCurrent = function(dtCols = c("D157" = "V14")) {
+  # list up all rds files in "./db" folder recursively, and check the last update date.
+  lst <- list.files(path = "./db", pattern = ".rds", recursive = TRUE, full.names = TRUE)
+  info <- file.info(lst)
+
+  # identify the path from the file name with full path.
+  pth <- dirname(lst)
+
+  # add lst and pth to info.
+  info <- cbind(info, lst, pth)
+
+  # identify the file name without path from lst.
+  info$fname <- basename(info$lst)
+
+  # identify the DB type from fname. (ex. D157)
+  info$db <- gsub("^(AL_)(D[0-9]+).*", "\\2", info$fname)
+
+  # Every rds file has a date column(ex. D157 : V14). Read all date of the rds files and note the last of them in info$lastDate.
+  library(progress)
+  pb <- progress_bar$new(
+    format = "[:bar] :current/:total (:elapsed)",
+    total = nrow(info),
+    clear = FALSE,
+    width = 60
+  )
+  info$lastDate <- sapply(1:nrow(info), function(i) {
+    fn = info$lst[i]
+    dtC = dtCols[info$db[i]]
+    pb$tick()
+    readRDS(fn)[, dtC] %>% max()
+  })
+  return(info)
+}
