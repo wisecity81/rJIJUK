@@ -10,6 +10,7 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Depends: 
     aStarter,
-    aStarterGIS
+    aStarterGIS,
+    progress
 URL: https://github.com/wisecity81/rJIJUK
 BugReports: https://github.com/wisecity81/rJIJUK/issues

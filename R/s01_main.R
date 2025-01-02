@@ -211,6 +211,7 @@ checkCurrent = function(dtCols = c("D157" = "V14")) {
 
   # read the file info
   cat(.now(), "Read the file info.\n")
+  library(progress)
   pb <- progress_bar$new(total = length(lst),
                          format = "[:bar] :current/:total (:elapsed)",
                          clear = FALSE,
