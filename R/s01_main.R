@@ -252,6 +252,7 @@ checkCurrent = function(dtCols = c("D157" = "V14")) {
     pb$tick()
     readRDS(fn)[, dtC] %>% max()
   })
+  saveRDS(info, "./info.rds")
   return(info)
 }
 
