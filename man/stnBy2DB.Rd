@@ -4,10 +4,25 @@
 \alias{stnBy2DB}
 \title{stnBy2DB}
 \usage{
-stnBy2DB(stand_by = "./_stand_by")
+stnBy2DB(
+  stand_by = "./_stand_by",
+  raw_folder = "./_raw",
+  DBs = list(D157 = "V3", D002 = "A3"),
+  sep_i = c(D157 = ",", D002 = "NA"),
+  ext_i = c(D157 = ".csv", D002 = ".shp"),
+  szLimit = NA
+)
 }
 \arguments{
 \item{stand_by}{stand_by folder}
+
+\item{raw_folder}{raw folder}
+
+\item{DBs}{DBs name with BJD column name}
+
+\item{sep_i}{sep. character for each DB}
+
+\item{ext_i}{extension for each DB#'}
 }
 \description{
 This function is to list the files in the stand_by folder, and is to split the files into DBs by BJD.

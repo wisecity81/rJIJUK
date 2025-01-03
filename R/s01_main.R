@@ -127,16 +127,25 @@ downloadInfo = function(download = "./_download(zip)") {
 #' This function is to list the files in the stand_by folder, and is to split the files into DBs by BJD.
 #' And then splited DBs are saved in the DB folder.
 #' @param stand_by stand_by folder
+#' @param raw_folder raw folder
+#' @param DBs DBs name with BJD column name
+#' @param sep_i sep. character for each DB
+#' @param ext_i extension for each DB#'
 #' @return NULL
-stnBy2DB = function(stand_by = "./_stand_by") {
-
-  DBs = list("D157" = "V3") # BJD column name
-  fLst = list.files(stand_by)
+#' @export
+stnBy2DB = function(stand_by = "./_stand_by"
+                    , raw_folder = "./_raw"
+                    , DBs = list("D157" = "V3"
+                                 , "D002" = "A3") # BJD column name
+                    , sep_i = c("D157" = ","
+                                , "D002" = "NA") # Define sep. character for each DB.
+                    , ext_i = c("D157" = ".csv"
+                                , "D002" = ".shp") # Define extension for each DB.
+                    , szLimit = NA
+                    ) {
+  fLst = list.files(stand_by, pattern = paste(ext_i, collapse = "|"))
   # Extract db tpye from the file name
-  db_i = fLst %>% .s_xtr("^(AL)_D[0-9]+") %>% .s_rm("^(AL)_")
-
-  # Define sep. character for each DB.
-  sep_i = c("D157" = ",")
+  db_i = fLst %>% .s_xtr(paste0(names(DBs), collapse = "|"))
 
   # Create a progress bar
   pb <- progress_bar$new(
@@ -151,14 +160,38 @@ stnBy2DB = function(stand_by = "./_stand_by") {
     fn = fLst[i]
     db = db_i[i]
     bjdcol = DBs[[db]]
+    ext = ext_i[db]
 
     # Read the file
     cat(.now(), "Split", fn, "\n", file = ".log", append = TRUE)
     cat(.now(), "Split", fn, "\n")
-    a = .rdSmart_csv(paste0(stand_by, "/", fn), .sep = sep_i[db]) %>% .noMsg()
 
-    # split and save the data by BJD
-    DB2folder(db = a, BJDcol = bjdcol, dbSrc = fn)
+    if (!is.na(szLimit)) {
+      cond = file.info(paste0(stand_by,"/",fn)) %>% .$size
+      cond = cond < szLimit
+    } else {
+      cond = TRUE
+    }
+
+    if (cond) {
+      if (ext != ".shp") {
+        sink("NUL")
+        a = .rdSmart_csv(paste0(stand_by, "/", fn), .sep = sep_i[db])
+        file.rename(paste0(stand_by, "/", fn), paste0(raw_folder, "/", fn))
+        sink()
+      } else {
+        sink("NUL")
+        a = .rdSmart_shp(paste0(stand_by, "/", fn), .chkCol = bjdcol)
+        b = list.files(stand_by, pattern = .s_rm(fn, ".shp$"))
+        for (b_i in b) {
+          file.rename(paste0(stand_by, "/", b_i), paste0(raw_folder, "/", b_i))
+        }
+        sink()
+      }
+      # split and save the data by BJD
+      DB2folder(db = a, BJDcol = bjdcol, dbSrc = fn)
+      gc()
+    }
 
     # Update the progress bar
     pb$tick() # Update the progress bar
@@ -252,6 +285,7 @@ checkCurrent = function(dtCols = c("D157" = "V14")) {
     pb$tick()
     readRDS(fn)[, dtC] %>% max()
   })
+  saveRDS(info, "./info.rds")
   return(info)
 }
 
@@ -262,6 +296,8 @@ checkCurrent = function(dtCols = c("D157" = "V14")) {
 #' @return lastDt
 #' @export
 lastDate = function(.inf = info, .lastDateCol = "lastDate") {
-  lastDt = .inf[[.lastDateCol]] %>% .[.s_dtt(.,"\\d+\\-\\d+")] %>% as.POSIXct() %>% .[. < Sys.time()] %>% max
+  .inf = .inf %>% .flt(.s_dtt(lastDate, "\\d+\\-\\d+")) %>%
+    mutate(lastDate = as.POSIXct(lastDate)) %>% .flt(lastDate < Sys.time())
+  lastDt = group_by(.inf, db) %>% summarise(lastDt = as.POSIXct(max(lastDate)))
   return(lastDt)
 }
