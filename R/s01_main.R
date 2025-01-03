@@ -261,7 +261,7 @@ checkCurrent = function(dtCols = c("D157" = "V14")) {
 #' @param .inf info object
 #' @return lastDt
 #' @export
-lastDate = function(.inf = info) {
-  lastDt = .inf$lastDate %>% .[!.s_dtt(.,"[가-힣]")] %>% as.POSIXct() %>% .[. < Sys.time()] %>% max
+lastDate = function(.inf = info, .lastDateCol = "lastDate") {
+  lastDt = .inf[[.lastDateCol]] %>% .[.s_dtt(.,"\\d+\\-\\d+")] %>% as.POSIXct() %>% .[. < Sys.time()] %>% max
   return(lastDt)
 }
