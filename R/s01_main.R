@@ -254,3 +254,14 @@ checkCurrent = function(dtCols = c("D157" = "V14")) {
   })
   return(info)
 }
+
+#' lastDate
+#'
+#' This function returns the last date of the record in the info database.
+#' @param .inf info object
+#' @return lastDt
+#' @export
+lastDate = function(.inf = info) {
+  lastDt = .inf$lastDate %>% .[!.s_dtt(.,"[가-힣]")] %>% as.POSIXct() %>% .[. < Sys.time()] %>% max
+  return(lastDt)
+}
