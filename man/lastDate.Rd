@@ -4,7 +4,7 @@
 \alias{lastDate}
 \title{lastDate}
 \usage{
-lastDate(.inf = info)
+lastDate(.inf = info, .lastDateCol = "lastDate")
 }
 \arguments{
 \item{.inf}{info object}
