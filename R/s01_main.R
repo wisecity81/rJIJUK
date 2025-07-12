@@ -232,7 +232,7 @@ stnBy2DB2 = function(stand_by = "./_stand_by"
 
   # Loop for each file
   with_progress({
-    p <- progressor(along = 1:length(flst))
+    p <- progressor(along = 1:length(fLst))
     dAb = future_lapply(1:length(fLst), function(i) {
       fn = fLst[i]
       db = db_i[i]
