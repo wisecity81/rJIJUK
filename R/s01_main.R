@@ -266,13 +266,18 @@ stnBy2DB2 = function(stand_by = "./_stand_by"
           sink()
         }
         # split and save the data by BJD
-        DB2folder(db = a, BJDcol = bjdcol, dbSrc = fn)
-        gc()
+        a = tryCatch({
+          DB2folder(db = a, BJDcol = bjdcol, dbSrc = fn)
+        }
+        , error = function(e) {
+          b = cat(file = paste0("./_stand_by/", fn, ".err"), Sys.time())
+          NA
+        })
       }
+      gc()
 
       # Update the progress bar
       p() # Update the progress bar
-      cat("\n")
     })
   })
 }
