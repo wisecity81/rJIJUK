@@ -156,6 +156,7 @@ stnBy2DB = function(stand_by = "./_stand_by"
   )
 
   # Loop for each file
+
   for (i in 1:length(fLst)) {
     fn = fLst[i]
     db = db_i[i]
@@ -197,6 +198,83 @@ stnBy2DB = function(stand_by = "./_stand_by"
     pb$tick() # Update the progress bar
     cat("\n")
   }
+}
+
+#' stnBy2DB2
+#'
+#' This function is to list the files in the stand_by folder, and is to split the files into DBs by BJD.
+#' And then splited DBs are saved in the DB folder.
+#' @param stand_by stand_by folder
+#' @param raw_folder raw folder
+#' @param DBs DBs name with BJD column name
+#' @param sep_i sep. character for each DB
+#' @param ext_i extension for each DB#'
+#' @return NULL
+#' @export
+stnBy2DB2 = function(stand_by = "./_stand_by"
+                    , raw_folder = "./_raw"
+                    , DBs = list("D157" = "V3"
+                                 , "D002" = "A3") # BJD column name
+                    , sep_i = c("D157" = ","
+                                , "D002" = "NA") # Define sep. character for each DB.
+                    , ext_i = c("D157" = ".csv"
+                                , "D002" = ".shp") # Define extension for each DB.
+                    , szLimit = NA
+                    ) {
+  fLst = list.files(stand_by, pattern = paste(ext_i, collapse = "|"))
+  # Extract db tpye from the file name
+  db_i = fLst %>% .s_xtr(paste0(names(DBs), collapse = "|"))
+
+  require(progressr)
+  require(future)
+  require(future.apply)
+  plan(strategy = multisession, workers = availableCores() - 1)
+
+  # Loop for each file
+  with_progress({
+    p <- progressor(along = 1:length(flst))
+    dAb = future_lapply(1:length(fLst), function(i) {
+      fn = fLst[i]
+      db = db_i[i]
+      bjdcol = DBs[[db]]
+      ext = ext_i[db]
+
+      # Read the file
+      cat(.now(), "Split", fn, "\n", file = ".log", append = TRUE)
+      cat(.now(), "Split", fn, "\n")
+
+      if (!is.na(szLimit)) {
+        cond = file.info(paste0(stand_by,"/",fn)) %>% .$size
+        cond = cond < szLimit
+      } else {
+        cond = TRUE
+      }
+
+      if (cond) {
+        if (ext != ".shp") {
+          sink("NUL")
+          a = .rdSmart_csv(paste0(stand_by, "/", fn), .sep = sep_i[db])
+          file.rename(paste0(stand_by, "/", fn), paste0(raw_folder, "/", fn))
+          sink()
+        } else {
+          sink("NUL")
+          a = .rdSmart_shp(paste0(stand_by, "/", fn), .chkCol = bjdcol)
+          b = list.files(stand_by, pattern = .s_rm(fn, ".shp$"))
+          for (b_i in b) {
+            file.rename(paste0(stand_by, "/", b_i), paste0(raw_folder, "/", b_i))
+          }
+          sink()
+        }
+        # split and save the data by BJD
+        DB2folder(db = a, BJDcol = bjdcol, dbSrc = fn)
+        gc()
+      }
+
+      # Update the progress bar
+      p() # Update the progress bar
+      cat("\n")
+    })
+  })
 }
 
 #' cleanUpNonBJD
