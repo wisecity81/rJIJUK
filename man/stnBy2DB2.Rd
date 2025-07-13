@@ -10,7 +10,8 @@ stnBy2DB2(
   DBs = list(D157 = "V3", D002 = "A3"),
   sep_i = c(D157 = ",", D002 = "NA"),
   ext_i = c(D157 = ".csv", D002 = ".shp"),
-  szLimit = NA
+  szLimit = NA,
+  jpth = "R:/_library/_jijuk/"
 )
 }
 \arguments{

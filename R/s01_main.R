@@ -211,8 +211,8 @@ stnBy2DB = function(stand_by = "./_stand_by"
 #' @param ext_i extension for each DB#'
 #' @return NULL
 #' @export
-stnBy2DB2 = function(stand_by = "./_stand_by"
-                    , raw_folder = "./_raw"
+stnBy2DB2 = function(stand_by = "./_stand_by" # stand_by = "R:/_library/_jijuk/_stand_by"
+                    , raw_folder = "./_raw" # raw_folder = "R:/_library/_jijuk/_raw"
                     , DBs = list("D157" = "V3"
                                  , "D002" = "A3") # BJD column name
                     , sep_i = c("D157" = ","
@@ -220,10 +220,9 @@ stnBy2DB2 = function(stand_by = "./_stand_by"
                     , ext_i = c("D157" = ".csv"
                                 , "D002" = ".shp") # Define extension for each DB.
                     , szLimit = NA
+                    , jpth = "R:/_library/_jijuk/"
                     ) {
   fLst = list.files(stand_by, pattern = paste(ext_i, collapse = "|"))
-  # Extract db tpye from the file name
-  db_i = fLst %>% .s_xtr(paste0(names(DBs), collapse = "|"))
 
   require(progressr)
   require(future)
@@ -232,16 +231,12 @@ stnBy2DB2 = function(stand_by = "./_stand_by"
 
   # Loop for each file
   with_progress({
-    p <- progressor(along = 1:length(fLst))
-    dAb = future_lapply(1:length(fLst), function(i) {
-      fn = fLst[i]
-      db = db_i[i]
+    p <- progressor(along = fLst)
+    dAb = future_lapply(fLst, function(fn) { # fn = fLst[1]
+      # Extract db tpye from the file name
+      db = fn %>% .s_xtr(paste0(names(DBs), collapse = "|"))
       bjdcol = DBs[[db]]
       ext = ext_i[db]
-
-      # Read the file
-      cat(.now(), "Split", fn, "\n", file = ".log", append = TRUE)
-      cat(.now(), "Split", fn, "\n")
 
       if (!is.na(szLimit)) {
         cond = file.info(paste0(stand_by,"/",fn)) %>% .$size
@@ -253,33 +248,70 @@ stnBy2DB2 = function(stand_by = "./_stand_by"
       if (cond) {
         if (ext != ".shp") {
           sink("NUL")
-          a = .rdSmart_csv(paste0(stand_by, "/", fn), .sep = sep_i[db])
-          file.rename(paste0(stand_by, "/", fn), paste0(raw_folder, "/", fn))
+          a = tryCatch({
+            .rdSmart_csv(paste0(stand_by, "/", fn), .sep = sep_i[db])
+          }
+          , error = function(e) T)
+          if (is.logical(a)) {
+            cat(file = paste0(stand_by, "/", fn, ".err"), Sys.time(), "\n")
+          } else {
+            file.rename(paste0(stand_by, "/", fn), paste0(raw_folder, "/", fn))
+          }
           sink()
         } else {
           sink("NUL")
-          a = .rdSmart_shp(paste0(stand_by, "/", fn), .chkCol = bjdcol)
-          b = list.files(stand_by, pattern = .s_rm(fn, ".shp$"))
-          for (b_i in b) {
-            file.rename(paste0(stand_by, "/", b_i), paste0(raw_folder, "/", b_i))
+          a = tryCatch({
+            .rdSmart_shp(paste0(stand_by, "/", fn), .chkCol = bjdcol)
+          }
+          , error = function(e) T)
+          if (is.logical(a)) {
+            cat(file = paste0(stand_by, "/", fn, ".err"), Sys.time(), "\n")
+          } else {
+            b = list.files(stand_by, pattern = .s_rm(fn, ".shp$"))
+            for (b_i in b) {
+              file.rename(paste0(stand_by, "/", b_i), paste0(raw_folder, "/", b_i))
+            }
           }
           sink()
         }
+
         # split and save the data by BJD
-        .a = tryCatch({
-          DB2folder(db = a, BJDcol = bjdcol, dbSrc = fn)
+        if (!is.logical(a) && nrow(a) > 0) {
+          # DB2folder(db = a, BJDcol = bjdcol, dbSrc = fn)
+          if (nrow(a) == 0) {
+            return("db is empty")
+          } else {
+
+            dAb_split = tryCatch({
+              .DBpth = paste0(jpth, "db")
+              .BJDlst = a[[bjdcol]] %>% unique %>% .[!is.na(.) &&  . != "NA"]
+
+              for (i in 1:length(.BJDlst)) {
+                bjd_i = .BJDlst[i]
+                bjd_parts = strsplit(bjd_i, " ")[[1]]
+                dbSubFolder = paste0(bjd_parts, collapse = "/")
+                if (file.exists(file.path(DBpth,dbSubFolder)) == FALSE) {
+                  dir.create(file.path(DBpth, dbSubFolder), recursive = TRUE)
+                }
+                saveRDS(a[a[[bjdcol]] == bjd_i, ]
+                        , file = paste0(file.path(.DBpth, dbSubFolder, fn)
+                                        , ".rds"))
+                "OK"
+              }
+            }
+            , error = function(e) T)
+
+            if (dAb_split != "OK") cat(file = paste0(stand_by, "/", fn, ".err"), Sys.time(), "\n")
+          }
         }
-        , error = function(e) {
-          .b = cat(file = paste0("./_stand_by/", fn, ".err"), Sys.time())
-          NA
-        })
       }
       gc()
 
       # Update the progress bar
       p() # Update the progress bar
+      invisible(NULL)
     })
-  })
+  }); plan(sequential())
 }
 
 #' cleanUpNonBJD
