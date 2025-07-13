@@ -153,7 +153,7 @@ Dwn2standBy2 = function(DB, pub_time, download = "./_download(zip)", stand_by = 
       p(); gc()      # 진행 바 업데이트
     })
   })
-  plan(sequential())
+  plan(sequential)
   return(invisible())
 }
 
