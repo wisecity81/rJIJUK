@@ -106,6 +106,57 @@ Dwn2standBy = function(DB, .last = F, pub_time = NULL, time = c("1900-1-1","9999
   return(invisible())
 }
 
+#' Dwn2standBy2
+#'
+#' This function is to filter the files in the download folder by the time and DB type, and unzip the files to the stand_by folder.
+#' If target files are already exist in the stand_by folder, skip them.
+#' If pub_time is specified, the function will download the files that file name contains the pub_time, instead of the time range.
+#' Log the process of the function to .log file.
+#' @param DB DB type
+#' @param pub_time publication time
+#' @param download download folder
+#' @param stand_by stand_by folder
+#' @return NULL
+#' @export
+Dwn2standBy2 = function(DB, pub_time, download = "./_download(zip)", stand_by = "./_stand_by") {
+  # DB: DB type
+  # .last: If TRUE, the function will download the files that are created after the last download.
+  # pub_time: publication time
+  # time: time range
+  # download: download folder
+  # stand_by: stand_by folder
+  # return: NULL
+
+  require(progressr)
+  require(future)
+  require(future.apply)
+  plan(multisession, workers = availableCores() - 1)
+
+  fLst = list.files(download, full.names = T, pattern = pub_time)
+  target = .s_dtt(fLst, paste0("_", DB, "_"))
+  fLst = fLst[target]
+
+  if (length(fLst) == 0) {
+    return(invisible())
+  }
+
+  cat(.now(), "총 ", length(fLst), "파일 처리\n")
+
+  with_progress({
+    p = progressor(along = fLst)
+    dAb = future_lapply(fLst, function(.fLst) {
+      dAb_in = tryCatch({
+        suppressWarnings(unzip(zipfile = .fLst, exdir = stand_by, overwrite = F))
+      }
+      , error = function(e) T)
+      if (is.logical(dAb_in)) cat(file = paste0(download, basename(.fLst), ".err"), Sys.time())
+      p(); gc()      # 진행 바 업데이트
+    })
+  })
+  plan(sequential())
+  return(invisible())
+}
+
 #' downloadInfo
 #'
 #' This function is to list files in download folder.

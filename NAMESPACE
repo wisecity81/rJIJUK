@@ -2,6 +2,7 @@
 
 export(DB2folder)
 export(Dwn2standBy)
+export(Dwn2standBy2)
 export(checkCurrent)
 export(cleanUpNonBJD)
 export(downloadInfo)
